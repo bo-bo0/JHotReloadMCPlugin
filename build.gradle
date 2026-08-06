@@ -1,0 +1,94 @@
+import groovy.json.JsonSlurper
+
+plugins
+        {
+            id "java"
+        }
+
+repositories
+        {
+            mavenCentral()
+            maven { url "https://repo.gradle.org/gradle/libs-releases" }
+            flatDir { dirs mcreator_path + "/lib" }
+        }
+
+group = "net.jhotreloadplugin"
+
+version = new JsonSlurper()
+        .parse(file("src/main/resources/plugin.json"))["info"]["version"]
+
+java
+        {
+            toolchain
+                    {
+                        languageVersion = JavaLanguageVersion.of(25)
+                    }
+        }
+
+configurations
+        {
+            implementation.extendsFrom export
+        }
+
+dependencies
+        {
+            implementation project(path: ":MCreator")
+        }
+
+project(":MCreator").afterEvaluate
+        {
+            mcreatorProject ->
+
+                mcreatorProject.configurations
+                        .named("implementation")
+                        .get()
+                        .dependencies
+                        .each
+                                {
+                                    dependency -> dependencies.add("implementation", dependency)
+                                }
+        }
+
+tasks.register("runMCreatorWithPlugin", JavaExec)
+        {
+            group = "application"
+            description = "Runs MCreator with the development plugin loaded"
+
+            dependsOn tasks.jar
+
+            def pluginOutputDirectory = layout.buildDirectory
+                    .dir("libs")
+                    .get()
+                    .asFile
+                    .absolutePath
+
+            environment(
+                    "MCREATOR_PLUGINS_FOLDER",
+                    pluginOutputDirectory
+            )
+
+            environment(
+                    "MCREATOR_PLUGINS_DEV",
+                    "true"
+            )
+
+            jvmArgs(
+                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                    "--enable-native-access=ALL-UNNAMED,jcef"
+            )
+
+            classpath = project(":MCreator")
+                    .sourceSets
+                    .main
+                    .runtimeClasspath
+
+            mainClass.set("net.mcreator.Launcher")
+
+            workingDir = file(mcreator_path)
+
+            doFirst
+                    {
+                        println "Plugin directory: ${pluginOutputDirectory}"
+                        println "MCreator directory: ${workingDir}"
+                    }
+        }

@@ -1,0 +1,5 @@
+rootProject.name = 'JHotReloadMCPlugin'
+
+include ":MCreator"
+
+project(":MCreator").projectDir = file(mcreator_path)

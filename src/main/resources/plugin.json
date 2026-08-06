@@ -1,0 +1,14 @@
+{
+  "id": "jhotreload",
+  "supportedversions": [
+    2026002
+  ],
+  "weight": 0,
+  "javaplugin": "net.jhotreloadplugin.JHotReloadPlugin",
+  "info": {
+    "name": "JHotReload",
+    "version": "1.0.0",
+    "description": "A MCreator plugin that allows modders to change variable values at runtime using the JHotReload library.",
+    "author": "bo bo"
+  }
+}
