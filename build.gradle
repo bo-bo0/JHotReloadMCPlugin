@@ -92,3 +92,10 @@ tasks.register("runMCreatorWithPlugin", JavaExec)
                         println "MCreator directory: ${workingDir}"
                     }
         }
+
+tasks.named("jar", Jar)
+        {
+            archiveFileName.set(
+                    "jhotreload-for-mcreator-${project.version}.zip"
+            );
+        }

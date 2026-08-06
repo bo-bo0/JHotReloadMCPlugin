@@ -1,0 +1,19 @@
+name: JHotReload
+
+neoforge-1.21.1:
+
+  gradle: |
+    dependencies {
+        implementation files(
+            rootProject.file("lib/JHotReload.jar")
+        )
+    }
+
+neoforge-26.1.2:
+
+  gradle: |
+    dependencies {
+        implementation files(
+            rootProject.file("lib/JHotReload.jar")
+        )
+    }
