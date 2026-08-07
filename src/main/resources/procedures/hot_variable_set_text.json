@@ -8,21 +8,17 @@
     {
       "type": "input_value",
       "name": "VALUE",
-      "check": [
-        "Number",
-        "String",
-        "Boolean"
-      ]
+      "check": "String"
     }
   ],
   "inputsInline": true,
   "previousStatement": null,
   "nextStatement": null,
-  "colour": 15,
+  "colour": "%{BKY_TEXTS_HUE}",
   "mcreator": {
     "toolbox_id": "jhotreload",
     "toolbox_init": [
-      "<value name=\"VALUE\"><block type=\"math_number\"><field name=\"NUM\">1</field></block></value>"
+      "<value name=\"VALUE\"><block type=\"text\"><field name=\"TEXT\">text</field></block></value>"
     ],
     "fields": [
       "NAME"
