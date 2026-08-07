@@ -28,9 +28,6 @@ public final class JHotReloadWorkspaceInstaller
         {
             Files.createDirectories(targetDirectory);
 
-            if (Files.exists(targetPath))
-            { return targetPath; }
-
             try (var inputStream = JHotReloadWorkspaceInstaller.class.getResourceAsStream(RESOURCE_PATH))
             {
                 if (inputStream == null)

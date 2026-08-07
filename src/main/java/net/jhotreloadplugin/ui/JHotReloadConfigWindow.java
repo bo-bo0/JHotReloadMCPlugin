@@ -54,7 +54,7 @@ public final class JHotReloadConfigWindow extends JDialog
 
     public JHotReloadConfigWindow(MCreator mcreator)
     {
-        super(mcreator, "JHotReload Config", false);
+        super(mcreator, "JHotReload Config (restart Minecraft to apply changes)", false);
 
         this.mcreator = mcreator;
 
@@ -479,7 +479,10 @@ public final class JHotReloadConfigWindow extends JDialog
                         + "The JHotReload config has not been generated yet."
                         + "<br>"
                         + "Start the Minecraft client at least once, "
-                        + "then press Refresh."
+                        + "wait for a procedure (or custom element) "
+                        + "<br>"
+                        + "that uses Hot Variables to be executed, "
+                        + "and then press Refresh."
                         + "</html>"
         );
 
