@@ -1,0 +1,20 @@
+{
+  "args0": [
+    {
+      "type": "field_input",
+      "name": "NAME",
+      "text": "hot"
+    }
+  ],
+  "output": "Number",
+  "colour": "%{BKY_MATH_HUE}",
+  "mcreator": {
+    "toolbox_id": "jhotreload",
+    "fields": [
+      "NAME"
+    ],
+    "required_apis": [
+      "jhotreload"
+    ]
+  }
+}

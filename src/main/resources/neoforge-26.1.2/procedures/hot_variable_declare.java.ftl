@@ -1,0 +1,1 @@
+var ${field$NAME} = HotVariable.of(${input$VALUE}, "${field$NAME}");
