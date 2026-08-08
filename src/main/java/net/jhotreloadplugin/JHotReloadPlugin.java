@@ -2,6 +2,7 @@ package net.jhotreloadplugin;
 
 import net.jhotreloadplugin.installation.JHotReloadWorkspaceInstaller;
 import net.jhotreloadplugin.runtime.JHotReloadStateReader;
+import net.jhotreloadplugin.settings.JHotReloadPluginSettings;
 import net.jhotreloadplugin.ui.HotVariablesWindow;
 import net.jhotreloadplugin.ui.JHotReloadConfigWindow;
 
@@ -15,13 +16,7 @@ import net.mcreator.ui.init.L10N;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.swing.Box;
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
+import javax.swing.*;
 import java.awt.Color;
 import java.awt.Font;
 
@@ -120,12 +115,76 @@ public class JHotReloadPlugin extends JavaPlugin
         menu.add(openHotVariablesAction);
         menu.addSeparator();
         menu.add(openConfigAction);
+        menu.addSeparator();
+
+        menu.add(createBuildSettingsMenu(mcreator));
 
         var menuBar = mcreator.getMainMenuBar();
 
         menuBar.add(menu);
         menuBar.revalidate();
         menuBar.repaint();
+    }
+
+    private JMenu createBuildSettingsMenu(
+            MCreator mcreator
+    )
+    {
+        var menu = new JMenu(
+                L10N.t("plugin.jhotreload.build_settings")
+        );
+
+        var settings = JHotReloadPluginSettings.load(
+                mcreator.getWorkspace()
+        );
+
+        var keepActiveItem = new JCheckBoxMenuItem(
+                L10N.t(
+                        "plugin.jhotreload.keep_active_in_build"
+                )
+        );
+
+        keepActiveItem.setSelected(
+                settings.keepActiveInExportedMods()
+        );
+
+        keepActiveItem.addActionListener(event ->
+        {
+            boolean enabled = keepActiveItem.isSelected();
+
+            if (enabled)
+            {
+                int result = JOptionPane.showConfirmDialog(
+                        mcreator,
+                        "Exported mods will contain JHotReload enabled.\n"
+                                + "Hot Variables will therefore remain "
+                                + "hot-reloadable at runtime.\n\n"
+                                + "Enable this option?\n"
+                                + "(ENABLE IT ONLY IF YOU KNOW WHAT YOU'RE DOING)",
+                        "JHotReload build setting",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+                if (result != JOptionPane.YES_OPTION)
+                {
+                    keepActiveItem.setSelected(false);
+                    return;
+                }
+            }
+
+            settings.setKeepActiveInExportedMods(
+                    keepActiveItem.isSelected()
+            );
+
+            settings.save(
+                    mcreator.getWorkspace()
+            );
+        });
+
+        menu.add(keepActiveItem);
+
+        return menu;
     }
 
     private void registerToolbar(

@@ -3,19 +3,23 @@ name: JHotReload
 neoforge-1.21.1:
   gradle: |
     def jhotreloadLibrary =
-        files(rootProject.file("lib/JHotReload.jar"))
-  
+        files(rootProject.file(".jhotreload/JHotReload.jar"))
+
     def jhotreloadRuntimeDirectory =
         rootProject.file("run/JHotReload")
-  
+
+    def jhotreloadPluginSettings =
+        rootProject.file(".jhotreload-plugin.json")
+
     def jhotreloadReleaseDirectory =
         layout.buildDirectory.dir("generated/jhotreload-release")
-  
+
     dependencies {
         implementation jhotreloadLibrary
+        additionalRuntimeClasspath jhotreloadLibrary
         jarJar jhotreloadLibrary
     }
-    
+
     def generateJHotReloadReleaseConfig =
         tasks.register("generateJHotReloadReleaseConfig") {
             def sourceConfig =
@@ -23,36 +27,48 @@ neoforge-1.21.1:
                     jhotreloadRuntimeDirectory,
                     "@CONFIGJHotReload.json"
                 )
-    
+
             outputs.dir(jhotreloadReleaseDirectory)
-    
+
             outputs.upToDateWhen {
                 false
             }
-    
+
             doLast {
                 def outputDirectory =
                     jhotreloadReleaseDirectory.get().asFile
-    
+
                 outputDirectory.mkdirs()
-    
+
                 def releaseConfig = [:]
-    
+
                 if (sourceConfig.exists()) {
                     releaseConfig.putAll(
                         new groovy.json.JsonSlurper()
                             .parse(sourceConfig) as Map
                     )
                 }
-    
-                releaseConfig["isJHotReloadActive"] = false
-    
+
+                def keepJHotReloadActive = false
+
+                if (jhotreloadPluginSettings.exists()) {
+                    def pluginSettings =
+                        new groovy.json.JsonSlurper()
+                            .parse(jhotreloadPluginSettings)
+
+                    keepJHotReloadActive =
+                        pluginSettings["keepActiveInExportedMods"] == true
+                }
+
+                releaseConfig["isJHotReloadActive"] =
+                    keepJHotReloadActive
+
                 def outputConfig =
                     new File(
                         outputDirectory,
                         "@CONFIGJHotReload.json"
                     )
-    
+
                 outputConfig.text =
                     groovy.json.JsonOutput.prettyPrint(
                         groovy.json.JsonOutput.toJson(
@@ -61,16 +77,16 @@ neoforge-1.21.1:
                     )
             }
         }
-  
+
     tasks.named("jar") {
         dependsOn generateJHotReloadReleaseConfig
-  
+
         from(jhotreloadRuntimeDirectory) {
             include "**/*.json"
             exclude "@CONFIGJHotReload.json"
             into "META-INF/jhotreload"
         }
-  
+
         from(jhotreloadReleaseDirectory) {
             include "@CONFIGJHotReload.json"
             into "META-INF/jhotreload"
@@ -80,19 +96,22 @@ neoforge-1.21.1:
 neoforge-26.1.2:
   gradle: |
     def jhotreloadLibrary =
-        files(rootProject.file("lib/JHotReload.jar"))
-    
+        files(rootProject.file(".jhotreload/JHotReload.jar"))
+
     def jhotreloadRuntimeDirectory =
         rootProject.file("run/JHotReload")
-    
+
+    def jhotreloadPluginSettings =
+        rootProject.file(".jhotreload-plugin.json")
+
     def jhotreloadReleaseDirectory =
         layout.buildDirectory.dir("generated/jhotreload-release")
-    
+
     dependencies {
         implementation jhotreloadLibrary
         jarJar jhotreloadLibrary
     }
-    
+
     def generateJHotReloadReleaseConfig =
         tasks.register("generateJHotReloadReleaseConfig") {
             def sourceConfig =
@@ -100,36 +119,48 @@ neoforge-26.1.2:
                     jhotreloadRuntimeDirectory,
                     "@CONFIGJHotReload.json"
                 )
-    
+
             outputs.dir(jhotreloadReleaseDirectory)
-    
+
             outputs.upToDateWhen {
                 false
             }
-    
+
             doLast {
                 def outputDirectory =
                     jhotreloadReleaseDirectory.get().asFile
-    
+
                 outputDirectory.mkdirs()
-    
+
                 def releaseConfig = [:]
-    
+
                 if (sourceConfig.exists()) {
                     releaseConfig.putAll(
                         new groovy.json.JsonSlurper()
                             .parse(sourceConfig) as Map
                     )
                 }
-    
-                releaseConfig["isJHotReloadActive"] = false
-    
+
+                def keepJHotReloadActive = false
+
+                if (jhotreloadPluginSettings.exists()) {
+                    def pluginSettings =
+                        new groovy.json.JsonSlurper()
+                            .parse(jhotreloadPluginSettings)
+
+                    keepJHotReloadActive =
+                        pluginSettings["keepActiveInExportedMods"] == true
+                }
+
+                releaseConfig["isJHotReloadActive"] =
+                    keepJHotReloadActive
+
                 def outputConfig =
                     new File(
                         outputDirectory,
                         "@CONFIGJHotReload.json"
                     )
-    
+
                 outputConfig.text =
                     groovy.json.JsonOutput.prettyPrint(
                         groovy.json.JsonOutput.toJson(
@@ -137,17 +168,17 @@ neoforge-26.1.2:
                         )
                     )
             }
-      }
-    
+        }
+
     tasks.named("jar") {
         dependsOn generateJHotReloadReleaseConfig
-    
+
         from(jhotreloadRuntimeDirectory) {
             include "**/*.json"
             exclude "@CONFIGJHotReload.json"
             into "META-INF/jhotreload"
         }
-    
+
         from(jhotreloadReleaseDirectory) {
             include "@CONFIGJHotReload.json"
             into "META-INF/jhotreload"

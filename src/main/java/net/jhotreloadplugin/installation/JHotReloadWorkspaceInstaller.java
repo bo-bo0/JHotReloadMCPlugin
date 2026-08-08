@@ -10,8 +10,14 @@ import java.nio.file.StandardCopyOption;
 
 public final class JHotReloadWorkspaceInstaller
 {
-    private static final String RESOURCE_PATH = "/bundled-libs/JHotReload.jar";
-    private static final String LIBRARY_FILE_NAME = "JHotReload.jar";
+    private static final String RESOURCE_PATH =
+            "/bundled-libs/JHotReload.jar";
+
+    private static final String PLUGIN_DIRECTORY_NAME =
+            ".jhotreload";
+
+    private static final String LIBRARY_FILE_NAME =
+            "JHotReload.jar";
 
     private JHotReloadWorkspaceInstaller() {}
 
@@ -20,30 +26,41 @@ public final class JHotReloadWorkspaceInstaller
         var targetDirectory = workspace
                 .getWorkspaceFolder()
                 .toPath()
-                .resolve("lib");
+                .resolve(PLUGIN_DIRECTORY_NAME);
 
-        var targetPath = targetDirectory.resolve(LIBRARY_FILE_NAME);
+        var targetPath =
+                targetDirectory.resolve(LIBRARY_FILE_NAME);
 
         try
         {
             Files.createDirectories(targetDirectory);
 
-            try (var inputStream = JHotReloadWorkspaceInstaller.class.getResourceAsStream(RESOURCE_PATH))
+            try (var inputStream =
+                         JHotReloadWorkspaceInstaller.class
+                                 .getResourceAsStream(RESOURCE_PATH))
             {
                 if (inputStream == null)
-                { throw new IllegalStateException("Bundled JHotReload library not found"); }
+                {
+                    throw new IllegalStateException(
+                            "Bundled JHotReload library not found"
+                    );
+                }
 
-                Files.copy
-                (
-                    inputStream,
-                    targetPath,
-                    StandardCopyOption.REPLACE_EXISTING
+                Files.copy(
+                        inputStream,
+                        targetPath,
+                        StandardCopyOption.REPLACE_EXISTING
                 );
             }
 
             return targetPath;
         }
         catch (IOException exception)
-        { throw new UncheckedIOException("Failed to install JHotReload into workspace", exception); }
+        {
+            throw new UncheckedIOException(
+                    "Failed to install JHotReload into workspace",
+                    exception
+            );
+        }
     }
 }
