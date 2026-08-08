@@ -18,10 +18,9 @@ public final class JHotReloadStateReader
     {
         var configPath = getConfigPath(workspace);
 
-        // JHotReload defaults to active when no config exists.
         if (!Files.exists(configPath))
         {
-            return true;
+            return false;
         }
 
         try (var reader = Files.newBufferedReader(configPath))
@@ -34,16 +33,14 @@ public final class JHotReloadStateReader
 
             if (activeElement == null)
             {
-                return true;
+                return false;
             }
 
             return activeElement.getAsBoolean();
         }
         catch (IOException | RuntimeException exception)
         {
-            // JHotReload itself defaults to active, so being conservative
-            // here is preferable to hiding the warning.
-            return true;
+            return false;
         }
     }
 

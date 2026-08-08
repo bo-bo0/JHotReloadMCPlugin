@@ -4,15 +4,75 @@ neoforge-1.21.1:
   gradle: |
     def jhotreloadLibrary =
         files(rootProject.file("lib/JHotReload.jar"))
-
+  
+    def jhotreloadRuntimeDirectory =
+        rootProject.file("run/JHotReload")
+  
+    def jhotreloadReleaseDirectory =
+        layout.buildDirectory.dir("generated/jhotreload-release")
+  
     dependencies {
         implementation jhotreloadLibrary
         jarJar jhotreloadLibrary
     }
     
-    tasks.named("processResources") {
-        from(rootProject.file("run/JHotReload")) {
+    def generateJHotReloadReleaseConfig =
+        tasks.register("generateJHotReloadReleaseConfig") {
+            def sourceConfig =
+                new File(
+                    jhotreloadRuntimeDirectory,
+                    "@CONFIGJHotReload.json"
+                )
+    
+            outputs.dir(jhotreloadReleaseDirectory)
+    
+            outputs.upToDateWhen {
+                false
+            }
+    
+            doLast {
+                def outputDirectory =
+                    jhotreloadReleaseDirectory.get().asFile
+    
+                outputDirectory.mkdirs()
+    
+                def releaseConfig = [:]
+    
+                if (sourceConfig.exists()) {
+                    releaseConfig.putAll(
+                        new groovy.json.JsonSlurper()
+                            .parse(sourceConfig) as Map
+                    )
+                }
+    
+                releaseConfig["isJHotReloadActive"] = false
+    
+                def outputConfig =
+                    new File(
+                        outputDirectory,
+                        "@CONFIGJHotReload.json"
+                    )
+    
+                outputConfig.text =
+                    groovy.json.JsonOutput.prettyPrint(
+                        groovy.json.JsonOutput.toJson(
+                            releaseConfig
+                        )
+                    )
+            }
+        }
+  
+    tasks.named("jar") {
+        dependsOn generateJHotReloadReleaseConfig
+  
+        from(jhotreloadRuntimeDirectory) {
             include "**/*.json"
+            exclude "@CONFIGJHotReload.json"
+            into "META-INF/jhotreload"
+        }
+  
+        from(jhotreloadReleaseDirectory) {
+            include "@CONFIGJHotReload.json"
             into "META-INF/jhotreload"
         }
     }
@@ -21,15 +81,75 @@ neoforge-26.1.2:
   gradle: |
     def jhotreloadLibrary =
         files(rootProject.file("lib/JHotReload.jar"))
-
+    
+    def jhotreloadRuntimeDirectory =
+        rootProject.file("run/JHotReload")
+    
+    def jhotreloadReleaseDirectory =
+        layout.buildDirectory.dir("generated/jhotreload-release")
+    
     dependencies {
         implementation jhotreloadLibrary
         jarJar jhotreloadLibrary
     }
     
-    tasks.named("processResources") {
-        from(rootProject.file("run/JHotReload")) {
+    def generateJHotReloadReleaseConfig =
+        tasks.register("generateJHotReloadReleaseConfig") {
+            def sourceConfig =
+                new File(
+                    jhotreloadRuntimeDirectory,
+                    "@CONFIGJHotReload.json"
+                )
+    
+            outputs.dir(jhotreloadReleaseDirectory)
+    
+            outputs.upToDateWhen {
+                false
+            }
+    
+            doLast {
+                def outputDirectory =
+                    jhotreloadReleaseDirectory.get().asFile
+    
+                outputDirectory.mkdirs()
+    
+                def releaseConfig = [:]
+    
+                if (sourceConfig.exists()) {
+                    releaseConfig.putAll(
+                        new groovy.json.JsonSlurper()
+                            .parse(sourceConfig) as Map
+                    )
+                }
+    
+                releaseConfig["isJHotReloadActive"] = false
+    
+                def outputConfig =
+                    new File(
+                        outputDirectory,
+                        "@CONFIGJHotReload.json"
+                    )
+    
+                outputConfig.text =
+                    groovy.json.JsonOutput.prettyPrint(
+                        groovy.json.JsonOutput.toJson(
+                            releaseConfig
+                        )
+                    )
+            }
+      }
+    
+    tasks.named("jar") {
+        dependsOn generateJHotReloadReleaseConfig
+    
+        from(jhotreloadRuntimeDirectory) {
             include "**/*.json"
+            exclude "@CONFIGJHotReload.json"
+            into "META-INF/jhotreload"
+        }
+    
+        from(jhotreloadReleaseDirectory) {
+            include "@CONFIGJHotReload.json"
             into "META-INF/jhotreload"
         }
     }
