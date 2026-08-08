@@ -1,8 +1,9 @@
 package net.jhotreloadplugin;
 
-import net.jhotreloadplugin.ui.JHotReloadConfigWindow;
 import net.jhotreloadplugin.installation.JHotReloadWorkspaceInstaller;
+import net.jhotreloadplugin.runtime.JHotReloadStateReader;
 import net.jhotreloadplugin.ui.HotVariablesWindow;
+import net.jhotreloadplugin.ui.JHotReloadConfigWindow;
 
 import net.mcreator.plugin.JavaPlugin;
 import net.mcreator.plugin.Plugin;
@@ -14,140 +15,281 @@ import net.mcreator.ui.init.L10N;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.swing.Box;
 import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import java.awt.Color;
+import java.awt.Font;
 
 public class JHotReloadPlugin extends JavaPlugin
 {
     private static final Logger LOG =
             LogManager.getLogger("JHotReload plugin");
 
+    private static final String TOOLBAR_ICON_PATH =
+            "/icons/jhotreload_variables.png";
+
+    private static final int ACTIVE_STATE_CHECK_INTERVAL = 1000;
+
     public JHotReloadPlugin(Plugin plugin)
     {
         super(plugin);
 
-        System.out.println("[JHotReload] Plugin constructor executed");
+        addListener(
+                MCreatorLoadedEvent.class,
+                event -> SwingUtilities.invokeLater(
+                        () -> initializeWorkspace(event.getMCreator())
+                )
+        );
 
         LOG.info("JHotReload plugin was loaded");
-
-        addListener(MCreatorLoadedEvent.class, event ->
-        {
-            System.out.println("[JHotReload] MCreatorLoadedEvent received");
-
-            LOG.info("MCreatorLoadedEvent received");
-
-            SwingUtilities.invokeLater(() -> initializeWorkspaceWindow(event.getMCreator()));
-        });
     }
 
-    private void initializeWorkspaceWindow(MCreator mcreator)
+    private void initializeWorkspace(MCreator mcreator)
     {
-        registerUserInterface(mcreator);
         installLibrary(mcreator);
+        registerUserInterface(mcreator);
     }
 
     private void registerUserInterface(MCreator mcreator)
     {
         try
         {
-            System.out.println("[JHotReload] Registering user interface");
+            var openHotVariablesAction =
+                    createOpenHotVariablesAction(mcreator);
 
-            var openHotVariablesAction = new BasicAction
-            (
-                    mcreator.getActionRegistry(),
-                    L10N.t("plugin.jhotreload.open_variables"),
-                    actionEvent -> openHotVariablesWindow(mcreator)
+            var openConfigAction =
+                    createOpenConfigAction(mcreator);
+
+            registerMenu(
+                    mcreator,
+                    openHotVariablesAction,
+                    openConfigAction
             );
 
-            var openConfigAction = new BasicAction(
-                    mcreator.getActionRegistry(),
-                    L10N.t("plugin.jhotreload.open_config"),
-                    actionEvent -> openConfigWindow(mcreator)
+            registerToolbar(
+                    mcreator,
+                    openHotVariablesAction
             );
 
-            var menu = new JMenu(L10N.t("plugin.jhotreload.menu"));
-
-            menu.add(openHotVariablesAction);
-            menu.addSeparator();
-            menu.add(openConfigAction);
-
-            var menuBar = mcreator.getMainMenuBar();
-
-            menuBar.add(menu);
-            menuBar.revalidate();
-            menuBar.repaint();
-
-            var toolbar = mcreator.getToolBar();
-
-            var toolbarButton = toolbar.addToRightToolbar(openHotVariablesAction);
-
-            var iconUrl = JHotReloadPlugin.class.getResource("/icons/jhotreload_variables.png");
-
-            if (iconUrl == null)
-            { throw new IllegalStateException("JHotReload toolbar icon was not found"); }
-
-            toolbarButton.setIcon(new ImageIcon(iconUrl));
-            toolbarButton.setText(null);
-
-            toolbarButton.setToolTipText(L10N.t("plugin.jhotreload.open_variables"));
-
-            toolbarButton.setToolTipText(L10N.t("plugin.jhotreload.open_variables"));
-
-            toolbar.revalidate();
-            toolbar.repaint();
-
-            System.out.println("[JHotReload] User interface registered successfully");
-
-            LOG.info
-            (
-                    "JHotReload UI registered. Button visible: {}, size: {}",
-                    toolbarButton.isVisible(),
-                    toolbarButton.getSize()
-            );
+            LOG.info("JHotReload user interface registered");
         }
-        catch (Throwable exception)
+        catch (Exception exception)
         {
-            LOG.error(
-                    "Failed to register JHotReload user interface",
+            showError(
+                    mcreator,
+                    "Failed to register the JHotReload interface",
+                    "JHotReload plugin error",
                     exception
             );
+        }
+    }
 
-            exception.printStackTrace();
+    private BasicAction createOpenHotVariablesAction(MCreator mcreator)
+    {
+        return new BasicAction(
+                mcreator.getActionRegistry(),
+                L10N.t("plugin.jhotreload.open_variables"),
+                event -> openHotVariablesWindow(mcreator)
+        );
+    }
 
-            JOptionPane.showMessageDialog(
-                    mcreator,
-                    "Failed to register the JHotReload interface:\n"
-                            + exception,
-                    "JHotReload plugin error",
-                    JOptionPane.ERROR_MESSAGE
+    private BasicAction createOpenConfigAction(MCreator mcreator)
+    {
+        return new BasicAction(
+                mcreator.getActionRegistry(),
+                L10N.t("plugin.jhotreload.open_config"),
+                event -> openConfigWindow(mcreator)
+        );
+    }
+
+    private void registerMenu(
+            MCreator mcreator,
+            BasicAction openHotVariablesAction,
+            BasicAction openConfigAction
+    )
+    {
+        var menu = new JMenu(
+                L10N.t("plugin.jhotreload.menu")
+        );
+
+        menu.add(openHotVariablesAction);
+        menu.addSeparator();
+        menu.add(openConfigAction);
+
+        var menuBar = mcreator.getMainMenuBar();
+
+        menuBar.add(menu);
+        menuBar.revalidate();
+        menuBar.repaint();
+    }
+
+    private void registerToolbar(
+            MCreator mcreator,
+            BasicAction openHotVariablesAction
+    )
+    {
+        var toolbar = mcreator.getToolBar();
+
+        var hotVariablesButton =
+                toolbar.addToRightToolbar(
+                        openHotVariablesAction
+                );
+
+        configureHotVariablesButton(
+                hotVariablesButton
+        );
+
+        registerActiveIndicator(
+                mcreator,
+                hotVariablesButton.getParent()
+        );
+
+        toolbar.revalidate();
+        toolbar.repaint();
+    }
+
+    private void configureHotVariablesButton(
+            javax.swing.JButton button
+    )
+    {
+        button.setIcon(loadToolbarIcon());
+        button.setText(null);
+
+        button.setToolTipText(
+                L10N.t("plugin.jhotreload.open_variables")
+        );
+    }
+
+    private ImageIcon loadToolbarIcon()
+    {
+        var iconUrl = JHotReloadPlugin.class.getResource(
+                TOOLBAR_ICON_PATH
+        );
+
+        if (iconUrl == null)
+        {
+            throw new IllegalStateException(
+                    "JHotReload toolbar icon was not found: "
+                            + TOOLBAR_ICON_PATH
             );
+        }
+
+        return new ImageIcon(iconUrl);
+    }
+
+    private void registerActiveIndicator(
+            MCreator mcreator,
+            java.awt.Container rightToolbar
+    )
+    {
+        var activeLabel = createActiveLabel();
+
+        var activeIndicator = Box.createHorizontalBox();
+
+        activeIndicator.add(activeLabel);
+        activeIndicator.add(
+                Box.createHorizontalStrut(10)
+        );
+
+        rightToolbar.add(activeIndicator, 0);
+
+        updateActiveIndicator(
+                mcreator,
+                activeIndicator
+        );
+
+        startActiveStateTimer(
+                mcreator,
+                activeIndicator
+        );
+
+        rightToolbar.revalidate();
+        rightToolbar.repaint();
+    }
+
+    private JLabel createActiveLabel()
+    {
+        var label = new JLabel(
+                "⚠ JHotReload ACTIVE"
+        );
+
+        label.setForeground(
+                new Color(255, 140, 0)
+        );
+
+        label.setFont(
+                label.getFont().deriveFont(Font.BOLD)
+        );
+
+        label.setToolTipText(
+                "JHotReload is currently active. "
+                        + "Disable it when exporting the mod or "
+                        + "to prevent value sharing between "
+                        + "different instances."
+        );
+
+        return label;
+    }
+
+    private void startActiveStateTimer(
+            MCreator mcreator,
+            Box activeIndicator
+    )
+    {
+        var timer = new Timer(
+                ACTIVE_STATE_CHECK_INTERVAL,
+                event -> updateActiveIndicator(
+                        mcreator,
+                        activeIndicator
+                )
+        );
+
+        timer.start();
+    }
+
+    private void updateActiveIndicator(
+            MCreator mcreator,
+            Box activeIndicator
+    )
+    {
+        boolean active = JHotReloadStateReader.isActive(
+                mcreator.getWorkspace()
+        );
+
+        if (activeIndicator.isVisible() == active)
+        {
+            return;
+        }
+
+        activeIndicator.setVisible(active);
+
+        var parent = activeIndicator.getParent();
+
+        if (parent != null)
+        {
+            parent.revalidate();
+            parent.repaint();
         }
     }
 
     private void openHotVariablesWindow(MCreator mcreator)
     {
         try
-        { new HotVariablesWindow(mcreator).open(); }
-
-        catch (Throwable exception)
         {
-            LOG.error
-            (
-                    "Failed to open the hot variables window",
-                    exception
-            );
-
-            exception.printStackTrace();
-
-            JOptionPane.showMessageDialog
-            (
+            new HotVariablesWindow(mcreator).open();
+        }
+        catch (Exception exception)
+        {
+            showError(
                     mcreator,
-                    "Failed to open the hot variables window:\n"
-                            + exception,
+                    "Failed to open the hot variables window",
                     "JHotReload plugin error",
-                    JOptionPane.ERROR_MESSAGE
+                    exception
             );
         }
     }
@@ -158,19 +300,13 @@ public class JHotReloadPlugin extends JavaPlugin
         {
             new JHotReloadConfigWindow(mcreator).open();
         }
-        catch (Throwable exception)
+        catch (Exception exception)
         {
-            LOG.error(
-                    "Failed to open the JHotReload config window",
-                    exception
-            );
-
-            JOptionPane.showMessageDialog(
+            showError(
                     mcreator,
-                    "Failed to open the JHotReload config window:\n"
-                            + exception,
+                    "Failed to open the JHotReload config window",
                     "JHotReload plugin error",
-                    JOptionPane.ERROR_MESSAGE
+                    exception
             );
         }
     }
@@ -179,35 +315,42 @@ public class JHotReloadPlugin extends JavaPlugin
     {
         try
         {
-            var installedPath = JHotReloadWorkspaceInstaller.install(mcreator.getWorkspace());
+            var installedPath =
+                    JHotReloadWorkspaceInstaller.install(
+                            mcreator.getWorkspace()
+                    );
 
-            LOG.info
-            (
+            LOG.info(
                     "JHotReload installed in workspace: {}",
                     installedPath
             );
-
-            System.out.println("[JHotReload] Library installed at: " + installedPath);
         }
-        catch (Throwable exception)
+        catch (Exception exception)
         {
-            LOG.error
-            (
-                    "Failed to install JHotReload into the workspace",
-                    exception
-            );
-
-            exception.printStackTrace();
-
-            JOptionPane.showMessageDialog
-            (
+            showError(
                     mcreator,
                     "The interface was loaded, but the library "
-                            + "could not be installed:\n"
-                            + exception,
+                            + "could not be installed",
                     "JHotReload installation error",
-                    JOptionPane.ERROR_MESSAGE
+                    exception
             );
         }
+    }
+
+    private void showError(
+            MCreator mcreator,
+            String message,
+            String title,
+            Exception exception
+    )
+    {
+        LOG.error(message, exception);
+
+        JOptionPane.showMessageDialog(
+                mcreator,
+                message + ":\n" + exception,
+                title,
+                JOptionPane.ERROR_MESSAGE
+        );
     }
 }
