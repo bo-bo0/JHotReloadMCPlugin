@@ -9,6 +9,13 @@ neoforge-1.21.1:
         implementation jhotreloadLibrary
         jarJar jhotreloadLibrary
     }
+    
+    tasks.named("processResources") {
+        from(rootProject.file("run/JHotReload")) {
+            include "**/*.json"
+            into "META-INF/jhotreload"
+        }
+    }
 
 neoforge-26.1.2:
   gradle: |
@@ -18,4 +25,11 @@ neoforge-26.1.2:
     dependencies {
         implementation jhotreloadLibrary
         jarJar jhotreloadLibrary
+    }
+    
+    tasks.named("processResources") {
+        from(rootProject.file("run/JHotReload")) {
+            include "**/*.json"
+            into "META-INF/jhotreload"
+        }
     }
